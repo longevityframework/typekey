@@ -6,7 +6,7 @@ import scala.reflect.runtime.universe.Type
 import scala.reflect.runtime.universe.Type
 import scala.reflect.runtime.universe.TypeTag
 
-/** higher kinded type polymorphic collections */
+/** higher kinded type-polymorphic collections */
 package object typekey {
 
   /** returns a [[TypeKey]] for the specified type `A`. this method will only work where a `TypeTag`
