@@ -12,4 +12,5 @@ In brief, typekey provides the following features:
 - A `TypeBoundMap` is a `Map` where the key and value of each key-value pair is bound to the same
   type argument.
 
-For more details, please see the typekey website (TODO).
+For more details, please see the [typekey website](https://longevityframework.github.io/typekey/)
+and [API docs](https://longevityframework.github.io/typekey/api).

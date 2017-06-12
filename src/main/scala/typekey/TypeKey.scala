@@ -14,7 +14,7 @@ import scala.reflect.runtime.universe.TypeTag
  * its best to produce unique hash values, and always produces values compatible
  * with [[equals]].
  *
- * type keys are provided by an implicit method in [[emblem package emblem]], so
+ * type keys are provided by an implicit method in [[typekey package typekey]], so
  * you can get one implicitly like so:
  *
  * {{{
@@ -26,7 +26,7 @@ import scala.reflect.runtime.universe.TypeTag
  * or you can get one explicitly like so:
  *
  * {{{
- * val key = emblem.typeKey[List[String]]
+ * val key = typekey.typeKey[List[String]]
  * }}}
  *
  * or if you already have a `TypeTag` at hand:
