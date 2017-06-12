@@ -3,7 +3,7 @@ lazy val typekey = project.in(file("."))
   .enablePlugins(JekyllPlugin, SiteScaladocPlugin, GhpagesPlugin)
   .settings(
   organization := "org.longevityframework",
-  version := "1.0.0",
+  version := "1.1-SNAPSHOT",
   scalaVersion := "2.12.2",
   crossScalaVersions := Seq("2.11.11", "2.12.2"),
 
