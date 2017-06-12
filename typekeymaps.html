@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/css/style.css?v=">
+    <title>typekey by </title>
+  </head>
+
+  <body>
+
+    <header>
+      <div class="container">
+        <h1>typekey</h1>
+        <h2>Higher Kinded Type-Polymorphic Collections</h2>
+
+        <section id="downloads">
+          <a href="api/typekey" class="btn">Scaladoc API</a>
+          <a href="" class="btn btn-github"><span class="icon"></span>View on GitHub</a>
+        </section>
+      </div>
+    </header>
+
+    <div class="container">
+      <section id="main_content">
+        <h2 id="type-key-maps">Type Key Maps</h2>
+
+<p>In the <a href="typekeys.html">previous chapter</a>, we saw how emblem’s <code class="highlighter-rouge">TypeKeys</code> can be used in much the same way as <code class="highlighter-rouge">TypeTags</code>. Unlike <code class="highlighter-rouge">TypeTags</code>, <code class="highlighter-rouge">TypeKeys</code> compare as equal (as in <code class="highlighter-rouge">==</code>) for equivalent types. We saw how this allowed us to create sets of types, and use types as keys in a map. The map example we presented, however, was not very interesting, as the values stored were just <code class="highlighter-rouge">Ints</code>. What if we wanted to do something more interesting than that, where the types of the values actually depended on the types of the keys?</p>
+
+<p>Let’s take a look at an example to see what I’m getting at. Suppose we are developing an application for a company that builds computers according to the customers’ specifications. We want to model the different kinds of computer parts, and how they fit together to form a computer. We might come up with something like this:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">sealed</span> <span class="k">trait</span> <span class="nc">ComputerPart</span>
+<span class="k">case</span> <span class="k">class</span> <span class="nc">Memory</span><span class="o">(</span><span class="n">gb</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">ComputerPart</span>
+<span class="k">case</span> <span class="k">class</span> <span class="nc">CPU</span><span class="o">(</span><span class="n">mhz</span><span class="k">:</span> <span class="kt">Double</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">ComputerPart</span>
+<span class="k">case</span> <span class="k">class</span> <span class="nc">Display</span><span class="o">(</span><span class="n">resolution</span><span class="k">:</span> <span class="kt">Int</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">ComputerPart</span>
+
+<span class="k">case</span> <span class="k">class</span> <span class="nc">Computer</span><span class="o">(</span><span class="n">memory</span><span class="k">:</span> <span class="kt">Memory</span><span class="o">,</span> <span class="n">cpu</span><span class="k">:</span> <span class="kt">CPU</span><span class="o">,</span> <span class="n">display</span><span class="k">:</span> <span class="kt">Display</span><span class="o">)</span>
+</code></pre>
+</div>
+
+<p>In the workshop where we build the computers, we have an inventory of computer parts that customers can select. We’ll store each choice for <code class="highlighter-rouge">Memory</code> in a <code class="highlighter-rouge">List[Memory]</code>, each available <code class="highlighter-rouge">CPU</code> in a <code class="highlighter-rouge">List[CPU]</code>, and so on:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">memoryList</span> <span class="k">=</span> <span class="nc">Memory</span><span class="o">(</span><span class="mi">2</span><span class="o">)</span> <span class="o">::</span> <span class="nc">Memory</span><span class="o">(</span><span class="mi">4</span><span class="o">)</span> <span class="o">::</span> <span class="nc">Memory</span><span class="o">(</span><span class="mi">8</span><span class="o">)</span> <span class="o">::</span> <span class="nc">Nil</span>
+<span class="k">val</span> <span class="n">cpuList</span> <span class="k">=</span> <span class="nc">CPU</span><span class="o">(</span><span class="mf">2.2</span><span class="o">)</span> <span class="o">::</span> <span class="nc">CPU</span><span class="o">(</span><span class="mf">2.4</span><span class="o">)</span> <span class="o">::</span> <span class="nc">CPU</span><span class="o">(</span><span class="mf">2.6</span><span class="o">)</span> <span class="o">::</span> <span class="nc">Nil</span>
+<span class="k">val</span> <span class="n">displayList</span> <span class="k">=</span> <span class="nc">Display</span><span class="o">(</span><span class="mi">720</span><span class="o">)</span> <span class="o">::</span> <span class="nc">Display</span><span class="o">(</span><span class="mi">1080</span><span class="o">)</span> <span class="o">::</span> <span class="nc">Nil</span>
+</code></pre>
+</div>
+
+<p>We anticipate adding more kinds of <code class="highlighter-rouge">ComputerParts</code> in the future, and we are not terribly comfortable with having individual <code class="highlighter-rouge">Lists</code> around for each kind of part. We really want to store the entire inventory in a single data structure. We settle on building a <code class="highlighter-rouge">Map</code> where the keys to the map are the type of computer part, and the values are the list of parts of that type. The keys have this type:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="nc">TypeKey</span><span class="o">[</span><span class="k">_</span> <span class="k">&lt;:</span> <span class="kt">ComputerPart</span><span class="o">]</span>
+</code></pre>
+</div>
+
+<p>And the values have this type:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="nc">List</span><span class="o">[</span><span class="k">_</span> <span class="k">&lt;:</span> <span class="kt">ComputerPart</span><span class="o">]</span>
+</code></pre>
+</div>
+
+<p>We can construct our inventory using the hardcoded part lists we built above:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">emblem.TypeKey</span>
+<span class="k">import</span> <span class="nn">emblem.typeKey</span>
+
+<span class="k">val</span> <span class="n">inventory</span> <span class="k">=</span>
+  <span class="nc">Map</span><span class="o">[</span><span class="kt">TypeKey</span><span class="o">[</span><span class="k">_</span> <span class="k">&lt;:</span> <span class="kt">ComputerPart</span><span class="o">]</span>, <span class="kt">List</span><span class="o">[</span><span class="k">_</span> <span class="k">&lt;:</span> <span class="kt">ComputerPart</span><span class="o">]](</span>
+    <span class="n">typeKey</span><span class="o">[</span><span class="kt">Memory</span><span class="o">]</span> <span class="o">-&gt;</span> <span class="n">memoryList</span><span class="o">,</span>
+    <span class="n">typeKey</span><span class="o">[</span><span class="kt">CPU</span><span class="o">]</span> <span class="o">-&gt;</span> <span class="n">cpuList</span><span class="o">,</span>
+    <span class="n">typeKey</span><span class="o">[</span><span class="kt">Display</span><span class="o">]</span> <span class="o">-&gt;</span> <span class="n">displayList</span><span class="o">)</span>
+</code></pre>
+</div>
+
+<p>We can pull up our inventory of <code class="highlighter-rouge">CPUs</code> like so:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">cpus</span> <span class="k">=</span> <span class="n">inventory</span><span class="o">(</span><span class="n">typeKey</span><span class="o">[</span><span class="kt">CPU</span><span class="o">])</span>
+</code></pre>
+</div>
+
+<p>But there is a problem. The type of the resulting value is not right. It is <code class="highlighter-rouge">List[_ &lt;: ComputerPart]</code>, when we are expecting <code class="highlighter-rouge">List[CPU]</code>. If we need to use it as a <code class="highlighter-rouge">List[CPU]</code>, we will have to cast it to the right type. Consider what a method would look like that pulls a parts list out of the inventory by type. We want it to take in the type as parameter, and return a properly typed list. In other words, we want a method signature that looks something like this:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">def</span> <span class="n">partList</span><span class="o">[</span><span class="kt">P</span> <span class="k">&lt;:</span> <span class="kt">ComputerPart</span><span class="o">]</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">P</span><span class="o">]</span>
+</code></pre>
+</div>
+
+<p>We would call this method like so:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">cpus</span> <span class="k">=</span> <span class="n">partList</span><span class="o">[</span><span class="kt">CPU</span><span class="o">]</span>
+</code></pre>
+</div>
+
+<p>Since we need to look up the part list by <code class="highlighter-rouge">TypeKey</code>, we can add a <code class="highlighter-rouge">TypeKey</code> as an implicit parameter, like so:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">def</span> <span class="n">partList</span><span class="o">[</span><span class="kt">P</span> <span class="k">&lt;:</span> <span class="kt">ComputerPart</span> <span class="kt">:</span> <span class="kt">TypeKey</span><span class="o">]</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">P</span><span class="o">]</span>
+</code></pre>
+</div>
+
+<p>Within the body of this method, we have to cast from <code class="highlighter-rouge">List[_ &lt;: ComputerPart]</code> to <code class="highlighter-rouge">List[P]</code>:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">def</span> <span class="n">partList</span><span class="o">[</span><span class="kt">P</span> <span class="k">&lt;:</span> <span class="kt">ComputerPart</span> <span class="kt">:</span> <span class="kt">TypeKey</span><span class="o">]</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">P</span><span class="o">]</span> <span class="k">=</span>
+  <span class="n">inventory</span><span class="o">(</span><span class="n">typeKey</span><span class="o">[</span><span class="kt">P</span><span class="o">]).</span><span class="n">asInstanceOf</span><span class="o">[</span><span class="kt">List</span><span class="o">[</span><span class="kt">P</span><span class="o">]]</span>
+</code></pre>
+</div>
+
+<p>And of course, there is nothing preventing this typecast from failing, as inventory may have been mistakenly initialized like so:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">inventory</span> <span class="k">=</span>
+  <span class="nc">Map</span><span class="o">[</span><span class="kt">TypeKey</span><span class="o">[</span><span class="k">_</span> <span class="k">&lt;:</span> <span class="kt">ComputerPart</span><span class="o">]</span>, <span class="kt">List</span><span class="o">[</span><span class="k">_</span> <span class="k">&lt;:</span> <span class="kt">ComputerPart</span><span class="o">]](</span>
+    <span class="n">typeKey</span><span class="o">[</span><span class="kt">Memory</span><span class="o">]</span> <span class="o">-&gt;</span> <span class="n">memoryList</span><span class="o">,</span>
+    <span class="n">typeKey</span><span class="o">[</span><span class="kt">CPU</span><span class="o">]</span> <span class="o">-&gt;</span> <span class="n">displayList</span><span class="o">,</span> <span class="c1">// OOPS!
+</span>    <span class="n">typeKey</span><span class="o">[</span><span class="kt">Display</span><span class="o">]</span> <span class="o">-&gt;</span> <span class="n">displayList</span><span class="o">)</span>
+</code></pre>
+</div>
+
+<p>At this point, calling val <code class="highlighter-rouge">cpus = partList[CPU]</code> does fail, but not in the way you might think. Due to type erasure, the typecast is successful, and we end up with something with type <code class="highlighter-rouge">List[CPU]</code>, and value <code class="highlighter-rouge">List(Display(720), Display(1080))</code>! The<br />
+<code class="highlighter-rouge">java.lang.ClassCastException</code> does not occur until we actually access one of the elements of the list, say with <code class="highlighter-rouge">cpus(0)</code> or <code class="highlighter-rouge">cpus.head</code>.</p>
+
+<p>Let’s sum up the problems we are having with this Map:</p>
+
+<ol>
+  <li>We are forced to typecast when accessing data in the map, and this makes us mildly nauseous.</li>
+  <li>Nothing is enforcing that the key and value in the map are working with the same kind of <code class="highlighter-rouge">ComputerPart</code>.</li>
+</ol>
+
+<p>I created <code class="highlighter-rouge">TypeKeyMap</code> for situations like these. They behave similarly to the <code class="highlighter-rouge">Map</code> above, but the types of the key and the value in any key-value pair are forced to agree. To build a <code class="highlighter-rouge">TypeKeyMap</code>, we have to specify two type parameters: <code class="highlighter-rouge">TypeBound</code>, which serves as an upper bound on the type parameters for the key and value types; And <code class="highlighter-rouge">Val</code>, which describes the type of the values in the map. In our example, we want to use <code class="highlighter-rouge">ComputerPart</code> for <code class="highlighter-rouge">TypeBound</code>, and <code class="highlighter-rouge">List</code> for <code class="highlighter-rouge">Val</code>. We initialize our new inventory as follows:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">emblem.TypeKeyMap</span>
+
+<span class="k">val</span> <span class="n">inventory</span> <span class="k">=</span> <span class="nc">TypeKeyMap</span><span class="o">[</span><span class="kt">ComputerPart</span>, <span class="kt">List</span><span class="o">]()</span> <span class="o">+</span>
+  <span class="n">memoryList</span> <span class="o">+</span> <span class="n">cpuList</span> <span class="o">+</span> <span class="n">displayList</span>
+</code></pre>
+</div>
+
+<p>There are a couple points of interest I’d like to mention here. First, notice that when we add a key-value pair to the map, we only need to mention the value, as the key can be inferred from the value. If you want to be explicit about the keys as well, the following code is equivalent:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">inventory</span> <span class="k">=</span> <span class="nc">TypeKeyMap</span><span class="o">[</span><span class="kt">ComputerPart</span>, <span class="kt">List</span><span class="o">]()</span> <span class="o">+</span>
+  <span class="o">(</span><span class="n">typeKey</span><span class="o">[</span><span class="kt">Memory</span><span class="o">]</span> <span class="o">-&gt;</span> <span class="n">memoryList</span><span class="o">)</span> <span class="o">+</span>
+  <span class="o">(</span><span class="n">typeKey</span><span class="o">[</span><span class="kt">CPU</span><span class="o">]</span> <span class="o">-&gt;</span> <span class="n">cpuList</span><span class="o">)</span> <span class="o">+</span>
+  <span class="o">(</span><span class="n">typeKey</span><span class="o">[</span><span class="kt">Display</span><span class="o">]</span> <span class="o">-&gt;</span> <span class="n">displayList</span><span class="o">)</span>
+</code></pre>
+</div>
+
+<p>Second, in contrast to <code class="highlighter-rouge">scala.collection.immutable.Map</code>, there is no way to initialize the <code class="highlighter-rouge">TypeKeyMap</code> with a single varargs method invocation. This is because every key-value pair must be type-checked individually, to make sure the type bounds match. I have an idea about how I might overcome this problem, but it’s not high priority for me at the moment, since using the <code class="highlighter-rouge">+</code> operator as above to construct the map seems elegant enough.</p>
+
+<p>Now, when we pull out a part list, it is well typed. In this example, we look up a value explicitly by key, just as we would with a normal Scala <code class="highlighter-rouge">Map</code>. No cast required:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">memParts</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">Memory</span><span class="o">]</span> <span class="k">=</span> <span class="n">inventory</span><span class="o">(</span><span class="n">typeKey</span><span class="o">[</span><span class="kt">Memory</span><span class="o">])</span>
+</code></pre>
+</div>
+
+<p>But that’s a little verbose. Here’s a more fluid way to look up a value by key:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">memParts</span><span class="k">:</span> <span class="kt">List</span><span class="o">[</span><span class="kt">Memory</span><span class="o">]</span> <span class="k">=</span> <span class="n">inventory</span><span class="o">[</span><span class="kt">Memory</span><span class="o">]</span>
+</code></pre>
+</div>
+
+<p>We can update the <code class="highlighter-rouge">TypeKeyMap</code> using the <code class="highlighter-rouge">+</code> operator. <code class="highlighter-rouge">TypeKeyMaps</code> are immutable, so this operation produces a new map:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">moreMemory</span> <span class="k">=</span> <span class="nc">Memory</span><span class="o">(</span><span class="mi">16</span><span class="o">)</span> <span class="o">::</span> <span class="n">memoryList</span>
+<span class="k">val</span> <span class="n">updatedInventory</span> <span class="k">=</span> <span class="n">inventory</span> <span class="o">+</span> <span class="n">moreMemory</span>
+</code></pre>
+</div>
+
+<p>Once again, the <code class="highlighter-rouge">TypeKey</code> is resolved implicitly, but we can be explicit about it if we like:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">updatedInventory</span> <span class="k">=</span> <span class="n">inventory</span> <span class="o">+</span> <span class="o">(</span><span class="n">typeKey</span><span class="o">[</span><span class="kt">Memory</span><span class="o">]</span> <span class="o">-&gt;</span> <span class="n">moreMemory</span><span class="o">)</span>
+</code></pre>
+</div>
+
+<p>Of course, providing a mistyped key-value pair doesn’t work. If we say:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">updatedInventory</span> <span class="k">=</span> <span class="n">inventory</span> <span class="o">+</span> <span class="o">(</span><span class="n">typeKey</span><span class="o">[</span><span class="kt">CPU</span><span class="o">]</span> <span class="o">-&gt;</span> <span class="n">moreMemory</span><span class="o">)</span>
+</code></pre>
+</div>
+
+<p>We get the following compile-time error:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="nc">Cannot</span> <span class="n">prove</span> <span class="n">that</span> <span class="nc">List</span><span class="o">[</span><span class="kt">CPU</span><span class="o">]</span> <span class="o">&lt;:&lt;</span> <span class="nc">List</span><span class="o">[</span><span class="kt">Memory</span><span class="o">].</span>
+</code></pre>
+</div>
+
+<p>Ideally, the <code class="highlighter-rouge">TypeKeyMap</code> API would be contain analogs for everything in <code class="highlighter-rouge">scala.collection.immutable.Map</code>. And while I would really like to see that happen, so far I have only implemented the easy parts of the API, and the methods that I wanted to use myself. Here’s a rough list of the methods I have implemented so far:</p>
+
+<ul>
+  <li><code class="highlighter-rouge">+</code>, <code class="highlighter-rouge">++</code>, <code class="highlighter-rouge">apply</code>, <code class="highlighter-rouge">contains</code>, <code class="highlighter-rouge">equals</code>, <code class="highlighter-rouge">filter</code>, <code class="highlighter-rouge">filterKeys</code>, <code class="highlighter-rouge">filterNot</code>, <code class="highlighter-rouge">foreach</code>, <code class="highlighter-rouge">get</code>, <code class="highlighter-rouge">getOrElse</code>, <code class="highlighter-rouge">hashCode</code>, <code class="highlighter-rouge">isEmpty</code>, <code class="highlighter-rouge">iterator</code>, <code class="highlighter-rouge">keys</code>, <code class="highlighter-rouge">mapValues</code>, <code class="highlighter-rouge">size</code>, <code class="highlighter-rouge">toString</code>, <code class="highlighter-rouge">values</code></li>
+</ul>
+
+<p>I also put in a <code class="highlighter-rouge">filterValues</code>, which is not available on a standard <code class="highlighter-rouge">Map</code>, but saves the user some trouble, as the method signature is much easier to digest than that of <code class="highlighter-rouge">filter</code>.</p>
+
+<p>I’ve found reproducing some portions of the <code class="highlighter-rouge">Map</code> API to be a little bit tricky, and to require the introduction of supporting classes. For instance, consider foreach. In the <code class="highlighter-rouge">Map</code> API, the method has the following signature:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">def</span> <span class="n">foreach</span><span class="o">(</span><span class="n">f</span><span class="k">:</span> <span class="o">((</span><span class="kt">A</span><span class="o">,</span> <span class="kt">B</span><span class="o">))</span> <span class="k">⇒</span> <span class="nc">Unit</span><span class="o">)</span><span class="k">:</span> <span class="kt">Unit</span>
+</code></pre>
+</div>
+
+<p>A little thought shows this signature to be insufficient for a <code class="highlighter-rouge">TypeKeyMap</code>. In our example above, the function <code class="highlighter-rouge">f</code> passed to method foreach would have a signature like this:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">def</span> <span class="n">f</span><span class="o">(</span><span class="n">pair</span><span class="k">:</span> <span class="o">(</span><span class="kt">TypeKey</span><span class="o">[</span><span class="k">_</span> <span class="k">&lt;:</span> <span class="kt">ComputerPart</span><span class="o">],</span>
+             <span class="nc">List</span><span class="o">[</span><span class="k">_</span> <span class="k">&lt;:</span> <span class="kt">ComputerPart</span><span class="o">]))</span><span class="k">:</span> <span class="kt">Unit</span>
+</code></pre>
+</div>
+
+<p>But what we actually want is a <code class="highlighter-rouge">TypeKey</code>/<code class="highlighter-rouge">ComputerPart</code> pair where the type parameters match. In other words, we want to supply a function with a signature like this:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">def</span> <span class="n">f</span><span class="o">[</span><span class="kt">P</span> <span class="k">&lt;:</span> <span class="kt">ComputerPart</span><span class="o">](</span><span class="n">pair</span><span class="k">:</span> <span class="o">(</span><span class="kt">TypeKey</span><span class="o">[</span><span class="kt">P</span><span class="o">],</span> <span class="nc">List</span><span class="o">[</span><span class="kt">P</span><span class="o">])</span><span class="k">:</span> <span class="kt">Unit</span>
+</code></pre>
+</div>
+
+<p>We run into a stumbling block at this point, because anonymous functions in Scala cannot yet have type parameters. So to make foreach happen, I had to introduce a supporting class, <code class="highlighter-rouge">TypeBoundPair</code>.</p>
+
+<p>I would really be thrilled if you were to start using this code, so if you find yourself wanting to use a part of the Map API that is not reflected here, please just let me know and I will do my best to add it in a timely manner. (Of course, I would be even more thrilled to see a pull request!)</p>
+
+<p>For more examples of using <code class="highlighter-rouge">TypeKeyMaps</code>, take a look at the
+<a href="https://github.com/longevityframework/typekey/blob/master/src/test/scala/typekey/typeKeyMap">TypeKeyMap unit tests</a>.</p>
+
+      </section>
+    </div>
+
+    
+  </body>
+</html>

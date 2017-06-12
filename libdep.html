@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/css/style.css?v=">
+    <title>typekey by </title>
+  </head>
+
+  <body>
+
+    <header>
+      <div class="container">
+        <h1>typekey</h1>
+        <h2>Higher Kinded Type-Polymorphic Collections</h2>
+
+        <section id="downloads">
+          <a href="api/typekey" class="btn">Scaladoc API</a>
+          <a href="" class="btn btn-github"><span class="icon"></span>View on GitHub</a>
+        </section>
+      </div>
+    </header>
+
+    <div class="container">
+      <section id="main_content">
+        <h2 id="setting-up-a-library-dependency">Setting up a Library Dependency</h2>
+
+<h3 id="preliminarys---scala-version">Preliminarys - Scala version</h3>
+
+<p>We currently publish artifacts for Scala versions 2.11 and 2.12, so be
+sure your project is using a compatible Scala version. For example,
+your <code class="highlighter-rouge">build.sbt</code> file may have:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">scalaVersion</span> <span class="o">:=</span> <span class="s">"2.11.8"</span>
+</code></pre>
+</div>
+
+<p>Or:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">scalaVersion</span> <span class="o">:=</span> <span class="s">"2.12.2"</span>
+</code></pre>
+</div>
+
+<h3 id="using-sonatype-artifacts">Using Sonatype Artifacts</h3>
+
+<p>In your <code class="highlighter-rouge">build.sbt</code>, include the lines:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">resolvers</span> <span class="o">+=</span> <span class="nc">Resolver</span><span class="o">.</span><span class="n">sonatypeRepo</span><span class="o">(</span><span class="s">"releases"</span><span class="o">)</span>
+
+<span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"org.longevityframework"</span> <span class="o">%%</span> <span class="s">"typekey"</span> <span class="o">%</span> <span class="s">"1.0.0"</span>
+</code></pre>
+</div>
+
+<p>At this time I have no plans to publish snapshots. I’ll publish any new releases to Sonatype,
+including any bug fix releases. You can follow the procedure below if you want to get the latest
+straight from the source.</p>
+
+<h3 id="building-the-artifacts-yourself">Building the Artifacts Yourself</h3>
+
+<h4 id="download-the-source">Download the Source</h4>
+
+<p>Create a clone of the typekey project:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="o">://</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">longevityframework</span><span class="o">/</span><span class="n">typekey</span><span class="o">.</span><span class="n">git</span>
+<span class="n">cd</span> <span class="n">typekey</span>
+</code></pre>
+</div>
+
+<h4 id="choose-the-right-branch">Choose the Right Branch</h4>
+
+<p>You probably want to be on the <code class="highlighter-rouge">master</code> branch, as this holds the
+latest working version. You are probably already there, but just in
+case:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>git checkout master
+git pull
+</code></pre>
+</div>
+
+<h4 id="publish-local">Publish Local</h4>
+
+<p>Now use SBT to publish the typekey artifact locally:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>sbt publishLocal
+</code></pre>
+</div>
+
+<h4 id="include-as-a-library-dependency">Include as a Library Dependency</h4>
+
+<p>In the projects where you want to use typekey, include a library dependency. If you are on the
+<code class="highlighter-rouge">master</code> branch, use:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"org.longevityframework"</span> <span class="o">%%</span> <span class="s">"typekey"</span> <span class="o">%</span> <span class="s">"1.1-SNAPSHOT"</span>
+</code></pre>
+</div>
+
+      </section>
+    </div>
+
+    
+  </body>
+</html>

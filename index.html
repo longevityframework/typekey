@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/css/style.css?v=">
+    <title>typekey by </title>
+  </head>
+
+  <body>
+
+    <header>
+      <div class="container">
+        <h1>typekey</h1>
+        <h2>Higher Kinded Type-Polymorphic Collections</h2>
+
+        <section id="downloads">
+          <a href="api/typekey" class="btn">Scaladoc API</a>
+          <a href="" class="btn btn-github"><span class="icon"></span>View on GitHub</a>
+        </section>
+      </div>
+    </header>
+
+    <div class="container">
+      <section id="main_content">
+        <p>Welcome to the <a href="https://github.com/longevityframework/typekey">typekey</a>! We privide an extension API
+for <a href="http://docs.scala-lang.org/overviews/reflection/typetags-manifests.html">type tags</a>, called a
+<a href="api/typekey/TypeKey.html">type key</a>, as well as some higher kinded type-polymorphic collections.</p>
+
+<p>In brief, typekey provides the following features:</p>
+
+<ul>
+  <li>A <code class="highlighter-rouge">TypeKey</code> is a
+<a href="http://docs.scala-lang.org/overviews/reflection/typetags-manifests.html"><code class="highlighter-rouge">TypeTag</code></a> that is
+suitable for use as a key in a <code class="highlighter-rouge">Set</code> or a <code class="highlighter-rouge">Map</code>.</li>
+  <li>A <code class="highlighter-rouge">TypeKeyMap</code> is a <code class="highlighter-rouge">Map</code> from <code class="highlighter-rouge">TypeKey</code> to objects with type arguments that match the type
+indicated by the <code class="highlighter-rouge">TypeKey</code>.</li>
+  <li>A <code class="highlighter-rouge">TypeBoundMap</code> is a <code class="highlighter-rouge">Map</code> where the key and value of each key-value pair is bound to the same
+type argument.</li>
+</ul>
+
+<p>Here’s some more in-depth material to help you get started:</p>
+
+<ol>
+  <li><a href="experiment.html">Experimenting in the Scala REPL</a></li>
+  <li><a href="libdep.html">Setting up a Library Dependency on typekey</a></li>
+  <li><a href="typekeys.html">TypeKeys</a></li>
+  <li><a href="typekeymaps.html">TypeKeyMaps</a></li>
+  <li><a href="typeboundmaps.html">TypeBoundMaps</a></li>
+  <li><a href="tparams.html">Using types that do not have exactly one type parameter with TypeKeyMaps and TypeBoundMaps</a></li>
+</ol>
+
+      </section>
+    </div>
+
+    
+  </body>
+</html>

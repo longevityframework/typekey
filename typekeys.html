@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/css/style.css?v=">
+    <title>typekey by </title>
+  </head>
+
+  <body>
+
+    <header>
+      <div class="container">
+        <h1>typekey</h1>
+        <h2>Higher Kinded Type-Polymorphic Collections</h2>
+
+        <section id="downloads">
+          <a href="api/typekey" class="btn">Scaladoc API</a>
+          <a href="" class="btn btn-github"><span class="icon"></span>View on GitHub</a>
+        </section>
+      </div>
+    </header>
+
+    <div class="container">
+      <section id="main_content">
+        <h2 id="type-keys">Type Keys</h2>
+
+<p>Because Scala generics are built on top of Java generics in the JVM, they suffer the same <a href="http://en.wikipedia.org/wiki/Generics_in_Java#Problems_with_type_erasure">problems with type-erasure</a>. We effectively lose track of the actual values of the type arguments for the generic type. Thankfully, Scala provides <code class="highlighter-rouge">TypeTags</code> to get around this problem. Type tags are explained in detail in other places, such as on the <a href="http://docs.scala-lang.org/overviews/reflection/typetags-manifests.html">Scala website</a>, and in this <a href="http://stackoverflow.com/a/12232195/2186890">Stack Overflow answer</a>, so I won’t go into the details here.</p>
+
+<p>As the Stack Overflow answer above points out, type tags are not necessarily equal, as in <code class="highlighter-rouge">==</code> equal, even though the two type tags represent an equivalent type.</p>
+
+<p>To see this in action, let’s boot up the REPL (Scala’s interactive shell). I’m going to start it up inside SBT in the typekey project. This procedure should work for any project that declares a dependency on typekey:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="gp">bash% </span>git clone https://github.com/longevityframework/typekey.git
+<span class="gp">bash% </span><span class="nb">cd </span>typekey
+<span class="gp">bash% </span>sbt
+<span class="gp">&gt; </span>console
+Welcome to Scala version 2.11.5 <span class="o">(</span>Java HotSpot<span class="o">(</span>TM<span class="o">)</span> 64-Bit Server VM, Java 1.8.0_25<span class="o">)</span>.
+<span class="gp">scala&gt; </span>
+</code></pre>
+</div>
+<p>Okay, now we’re in the REPL. Let’s import all the type-taggy stuff from the Scala reflection library:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="k">import</span> <span class="nn">scala.reflect.runtime.universe._</span>
+<span class="k">import</span> <span class="nn">scala.reflect.runtime.universe._</span>
+</code></pre>
+</div>
+
+<p>Let’s start with a simple type alias as an example. The type tags are not equal:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="k">trait</span> <span class="nc">A</span>
+<span class="n">defined</span> <span class="k">trait</span> <span class="nc">A</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="k">type</span> <span class="kt">B</span> <span class="o">=</span> <span class="n">A</span>
+<span class="n">defined</span> <span class="k">type</span> <span class="kt">alias</span> <span class="kt">B</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="n">typeTag</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span> <span class="o">==</span> <span class="n">typeTag</span><span class="o">[</span><span class="kt">B</span><span class="o">]</span>
+<span class="n">res0</span><span class="k">:</span> <span class="kt">Boolean</span> <span class="o">=</span> <span class="kc">false</span>
+</code></pre>
+</div>
+
+<p>The proper way to determine if these are equivalent types is with the <code class="highlighter-rouge">=:=</code> operator on <code class="highlighter-rouge">scala.reflect.api.Types.Type</code>, which can be accessed with method <code class="highlighter-rouge">TypeTag.tpe</code>:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">typeTag</span><span class="o">[</span><span class="kt">A</span><span class="o">].</span><span class="n">tpe</span> <span class="o">=:=</span> <span class="n">typeTag</span><span class="o">[</span><span class="kt">B</span><span class="o">].</span><span class="n">tpe</span>
+<span class="n">res1</span><span class="k">:</span> <span class="kt">Boolean</span> <span class="o">=</span> <span class="kc">true</span>
+</code></pre>
+</div>
+
+<p>Or, equivalently:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">typeOf</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span> <span class="o">=:=</span> <span class="n">typeOf</span><span class="o">[</span><span class="kt">B</span><span class="o">]</span>
+<span class="n">res2</span><span class="k">:</span> <span class="kt">Boolean</span> <span class="o">=</span> <span class="kc">true</span>
+</code></pre>
+</div>
+
+<p>Note that <code class="highlighter-rouge">TypeTag.==</code> will fail us not only when the types are equivalent as above, but in some circumstances when they are exactly the same type:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="k">object</span> <span class="nc">x</span> <span class="o">{</span>
+     <span class="o">|</span>   <span class="k">trait</span> <span class="nc">C</span>
+     <span class="o">|</span>   <span class="k">val</span> <span class="n">ctag</span> <span class="k">=</span> <span class="n">typeTag</span><span class="o">[</span><span class="kt">C</span><span class="o">]</span>
+     <span class="o">|</span> <span class="o">}</span>
+<span class="n">defined</span> <span class="k">object</span> <span class="nc">x</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="n">x</span><span class="o">.</span><span class="n">ctag</span> <span class="o">==</span> <span class="n">typeTag</span><span class="o">[</span><span class="kt">x.C</span><span class="o">]</span>
+<span class="n">res3</span><span class="k">:</span> <span class="kt">Boolean</span> <span class="o">=</span> <span class="kc">false</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="n">x</span><span class="o">.</span><span class="n">ctag</span><span class="o">.</span><span class="n">tpe</span> <span class="o">=:=</span> <span class="n">typeTag</span><span class="o">[</span><span class="kt">x.C</span><span class="o">].</span><span class="n">tpe</span>
+<span class="n">res4</span><span class="k">:</span> <span class="kt">Boolean</span> <span class="o">=</span> <span class="kc">true</span>
+</code></pre>
+</div>
+
+<p>Thankfully, we don’t get a new, non-equal type tag every time the <code class="highlighter-rouge">typeTag</code> method is called:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">typeTag</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span> <span class="o">==</span> <span class="n">typeTag</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span>
+<span class="n">res5</span><span class="k">:</span> <span class="kt">Boolean</span> <span class="o">=</span> <span class="kc">true</span>
+</code></pre>
+</div>
+
+<p>Clearly, type tags are not going to work very well as keys in a map. But <code class="highlighter-rouge">TypeKeys</code> are. Let’s give it a try:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="k">import</span> <span class="nn">typekey.typeKey</span>
+<span class="k">import</span> <span class="nn">typekey.typeKey</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="n">typeKey</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span> <span class="o">==</span> <span class="n">typeKey</span><span class="o">[</span><span class="kt">B</span><span class="o">]</span>
+<span class="n">res6</span><span class="k">:</span> <span class="kt">Boolean</span> <span class="o">=</span> <span class="kc">true</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="k">object</span> <span class="nc">x</span> <span class="o">{</span>
+     <span class="o">|</span>   <span class="k">trait</span> <span class="nc">C</span>
+     <span class="o">|</span>   <span class="k">val</span> <span class="n">ckey</span> <span class="k">=</span> <span class="n">typeKey</span><span class="o">[</span><span class="kt">C</span><span class="o">]</span>
+     <span class="o">|</span> <span class="o">}</span>
+<span class="n">defined</span> <span class="k">object</span> <span class="nc">x</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="n">x</span><span class="o">.</span><span class="n">ckey</span> <span class="o">==</span> <span class="n">typeKey</span><span class="o">[</span><span class="kt">x.C</span><span class="o">]</span>
+<span class="n">res7</span><span class="k">:</span> <span class="kt">Boolean</span> <span class="o">=</span> <span class="kc">true</span>
+</code></pre>
+</div>
+
+<p>Because there is an implicit conversion from <code class="highlighter-rouge">TypeTag</code> to <code class="highlighter-rouge">TypeKey</code>, we can basically use a key anywhere we can use a tag. Common usage of type tags is like so:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="k">def</span> <span class="n">grokTag</span><span class="o">[</span><span class="kt">A</span> <span class="kt">:</span> <span class="kt">TypeTag</span><span class="o">]</span> <span class="k">=</span> <span class="n">println</span><span class="o">(</span><span class="n">typeTag</span><span class="o">[</span><span class="kt">A</span><span class="o">].</span><span class="n">tpe</span><span class="o">)</span>
+<span class="n">grokTag</span><span class="k">:</span> <span class="err">[</span><span class="kt">A</span><span class="err">]</span><span class="o">(</span><span class="kt">implicit</span> <span class="kt">evidence$1:</span> <span class="kt">reflect.runtime.universe.TypeTag</span><span class="o">[</span><span class="kt">A</span><span class="o">])</span><span class="nc">Unit</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="n">grokTag</span><span class="o">[</span><span class="kt">List</span><span class="o">[</span><span class="k">_</span><span class="o">]]</span>
+<span class="n">scala</span><span class="o">.</span><span class="nc">List</span><span class="o">[</span><span class="k">_</span><span class="o">]</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="n">grokTag</span><span class="o">[</span><span class="kt">List</span><span class="o">[</span><span class="kt">Int</span><span class="o">]]</span>
+<span class="n">scala</span><span class="o">.</span><span class="nc">List</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span>
+</code></pre>
+</div>
+
+<p>We can do the exact same thing with type keys:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="k">import</span> <span class="nn">typekey.TypeKey</span>
+<span class="k">import</span> <span class="nn">typekey.TypeKey</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="k">def</span> <span class="n">grokKey</span><span class="o">[</span><span class="kt">A</span> <span class="kt">:</span> <span class="kt">TypeKey</span><span class="o">]</span> <span class="k">=</span> <span class="n">println</span><span class="o">(</span><span class="n">typeKey</span><span class="o">[</span><span class="kt">A</span><span class="o">].</span><span class="n">tpe</span><span class="o">)</span>
+<span class="n">grokKey</span><span class="k">:</span> <span class="err">[</span><span class="kt">A</span><span class="err">]</span><span class="o">(</span><span class="kt">implicit</span> <span class="kt">evidence$1:</span> <span class="k">type</span><span class="kt">key.TypeKey</span><span class="o">[</span><span class="kt">A</span><span class="o">])</span><span class="nc">Unit</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="n">grokKey</span><span class="o">[</span><span class="kt">List</span><span class="o">[</span><span class="k">_</span><span class="o">]]</span>
+<span class="n">scala</span><span class="o">.</span><span class="nc">List</span><span class="o">[</span><span class="k">_</span><span class="o">]</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="n">grokKey</span><span class="o">[</span><span class="kt">List</span><span class="o">[</span><span class="kt">Int</span><span class="o">]]</span>
+
+<span class="n">scala</span><span class="o">.</span><span class="nc">List</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span>
+</code></pre>
+</div>
+
+<p>Either of the above grokking methods could have alternatively made use of Scala’s implicitly:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="k">def</span> <span class="n">grokTag</span><span class="o">[</span><span class="kt">A</span> <span class="kt">:</span> <span class="kt">TypeTag</span><span class="o">]</span> <span class="k">=</span>
+     <span class="o">|</span>   <span class="n">println</span><span class="o">(</span><span class="n">implicitly</span><span class="o">[</span><span class="kt">TypeTag</span><span class="o">[</span><span class="kt">A</span><span class="o">]].</span><span class="n">tpe</span><span class="o">)</span>
+<span class="n">grokTag</span><span class="k">:</span> <span class="err">[</span><span class="kt">A</span><span class="err">]</span><span class="o">(</span><span class="kt">implicit</span> <span class="kt">evidence$1:</span> <span class="kt">reflect.runtime.universe.TypeTag</span><span class="o">[</span><span class="kt">A</span><span class="o">])</span><span class="nc">Unit</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="k">def</span> <span class="n">grokKey</span><span class="o">[</span><span class="kt">A</span> <span class="kt">:</span> <span class="kt">TypeKey</span><span class="o">]</span> <span class="k">=</span> 
+     <span class="o">|</span>   <span class="n">println</span><span class="o">(</span><span class="n">implicitly</span><span class="o">[</span><span class="kt">TypeKey</span><span class="o">[</span><span class="kt">A</span><span class="o">]].</span><span class="n">tpe</span><span class="o">)</span>
+<span class="n">grokKey</span><span class="k">:</span> <span class="err">[</span><span class="kt">A</span><span class="err">]</span><span class="o">(</span><span class="kt">implicit</span> <span class="kt">evidence$1:</span> <span class="k">type</span><span class="kt">key.TypeKey</span><span class="o">[</span><span class="kt">A</span><span class="o">])</span><span class="nc">Unit</span>
+</code></pre>
+</div>
+
+<p>You can also manually convert between tags and keys yourself:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="k">val</span> <span class="n">tag</span> <span class="k">=</span> <span class="n">typeTag</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span>
+<span class="n">tag</span><span class="k">:</span> <span class="kt">reflect.runtime.universe.TypeTag</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span> <span class="k">=</span> <span class="nc">TypeTag</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="nc">TypeKey</span><span class="o">(</span><span class="n">tag</span><span class="o">)</span>
+<span class="n">res8</span><span class="k">:</span> <span class="k">type</span><span class="kt">key.TypeKey</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span> <span class="k">=</span> <span class="nc">TypeKey</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="k">val</span> <span class="n">key</span> <span class="k">=</span> <span class="n">typeKey</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span>
+<span class="n">key</span><span class="k">:</span> <span class="k">type</span><span class="kt">key.TypeKey</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span> <span class="k">=</span> <span class="nc">TypeKey</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="n">key</span><span class="o">.</span><span class="n">tag</span>
+<span class="n">res9</span><span class="k">:</span> <span class="kt">reflect.runtime.universe.TypeTag</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span> <span class="k">=</span> <span class="nc">TypeTag</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span>
+</code></pre>
+</div>
+
+<p>Of course, the <code class="highlighter-rouge">TypeKey.hashCode</code> method is consistent with <code class="highlighter-rouge">equals</code>, so we can use them as keys in sets and maps. To see this, let’s set up some types to test with:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="k">trait</span> <span class="nc">A1</span>
+<span class="n">scala</span><span class="o">&gt;</span> <span class="k">type</span> <span class="kt">A2</span> <span class="o">=</span> <span class="n">A1</span>
+<span class="n">scala</span><span class="o">&gt;</span> <span class="k">trait</span> <span class="nc">B1</span>
+<span class="n">scala</span><span class="o">&gt;</span> <span class="k">type</span> <span class="kt">B2</span> <span class="o">=</span> <span class="n">B1</span>
+<span class="n">scala</span><span class="o">&gt;</span> <span class="k">trait</span> <span class="nc">C1</span>
+<span class="n">scala</span><span class="o">&gt;</span> <span class="k">type</span> <span class="kt">C2</span> <span class="o">=</span> <span class="n">C1</span>
+</code></pre>
+</div>
+
+<p>And now, some sets:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="k">val</span> <span class="n">tagset1</span> <span class="k">=</span> <span class="nc">Set</span><span class="o">(</span>
+     <span class="o">|</span>   <span class="n">typeTag</span><span class="o">[</span><span class="kt">A1</span><span class="o">],</span> <span class="n">typeTag</span><span class="o">[</span><span class="kt">A2</span><span class="o">],</span>
+     <span class="o">|</span>   <span class="n">typeTag</span><span class="o">[</span><span class="kt">B1</span><span class="o">],</span> <span class="n">typeTag</span><span class="o">[</span><span class="kt">B2</span><span class="o">],</span>
+     <span class="o">|</span>   <span class="n">typeTag</span><span class="o">[</span><span class="kt">C1</span><span class="o">],</span> <span class="n">typeTag</span><span class="o">[</span><span class="kt">C2</span><span class="o">])</span>
+<span class="n">scala</span><span class="o">&gt;</span> <span class="k">val</span> <span class="n">tagset2</span> <span class="k">=</span> <span class="nc">Set</span><span class="o">(</span><span class="n">typeTag</span><span class="o">[</span><span class="kt">A1</span><span class="o">],</span> <span class="n">typeTag</span><span class="o">[</span><span class="kt">B1</span><span class="o">],</span> <span class="n">typeTag</span><span class="o">[</span><span class="kt">C1</span><span class="o">])</span>
+<span class="n">scala</span><span class="o">&gt;</span> <span class="k">val</span> <span class="n">keyset1</span> <span class="k">=</span> <span class="nc">Set</span><span class="o">(</span>
+     <span class="o">|</span>   <span class="n">typeKey</span><span class="o">[</span><span class="kt">A1</span><span class="o">],</span> <span class="n">typeKey</span><span class="o">[</span><span class="kt">A2</span><span class="o">],</span>
+     <span class="o">|</span>   <span class="n">typeKey</span><span class="o">[</span><span class="kt">B1</span><span class="o">],</span> <span class="n">typeKey</span><span class="o">[</span><span class="kt">B2</span><span class="o">],</span>
+     <span class="o">|</span>   <span class="n">typeKey</span><span class="o">[</span><span class="kt">C1</span><span class="o">],</span> <span class="n">typeKey</span><span class="o">[</span><span class="kt">C2</span><span class="o">])</span>
+<span class="n">scala</span><span class="o">&gt;</span> <span class="k">val</span> <span class="n">keyset2</span> <span class="k">=</span> <span class="nc">Set</span><span class="o">(</span><span class="n">typeKey</span><span class="o">[</span><span class="kt">A1</span><span class="o">],</span> <span class="n">typeKey</span><span class="o">[</span><span class="kt">B1</span><span class="o">],</span> <span class="n">typeKey</span><span class="o">[</span><span class="kt">C1</span><span class="o">])</span>
+</code></pre>
+</div>
+
+<p>The size of these sets are 6, 3, 3 and 3, respectively. This is how they equal:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">tagset1</span> <span class="o">==</span> <span class="n">tagset2</span>
+<span class="n">res10</span><span class="k">:</span> <span class="kt">Boolean</span> <span class="o">=</span> <span class="kc">false</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="n">keyset1</span> <span class="o">==</span> <span class="n">keyset2</span>
+<span class="n">res11</span><span class="k">:</span> <span class="kt">Boolean</span> <span class="o">=</span> <span class="kc">true</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="n">tagset1</span><span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="nc">TypeKey</span><span class="o">(</span><span class="k">_</span><span class="o">))</span> <span class="o">==</span> <span class="n">keyset1</span>
+<span class="n">res12</span><span class="k">:</span> <span class="kt">Boolean</span> <span class="o">=</span> <span class="kc">true</span>
+</code></pre>
+</div>
+
+<p>Clearly, a set of type tags does not have any conceptual correlation to a set of types. But the set of type keys does.</p>
+
+<p>Above, when we called methods <code class="highlighter-rouge">grokTag</code> and <code class="highlighter-rouge">grokKey</code>, we specified the type argument explicitly, with calls like <code class="highlighter-rouge">grokTag[A]</code> and <code class="highlighter-rouge">grokKey[A]</code>. We can also lock down the type argument another way: by explicitly specifying the implicit arguments for <code class="highlighter-rouge">TypeTag</code> and <code class="highlighter-rouge">TypeKey</code>:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">grokTag</span><span class="o">(</span><span class="n">typeTag</span><span class="o">[</span><span class="kt">List</span><span class="o">[</span><span class="kt">Int</span><span class="o">]])</span>
+<span class="n">scala</span><span class="o">.</span><span class="nc">List</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="n">grokKey</span><span class="o">(</span><span class="n">typeKey</span><span class="o">[</span><span class="kt">List</span><span class="o">[</span><span class="kt">Int</span><span class="o">]])</span>
+<span class="n">scala</span><span class="o">.</span><span class="nc">List</span><span class="o">[</span><span class="kt">Int</span><span class="o">]</span>
+</code></pre>
+</div>
+
+<p>We can do the same thing with the tags and keys in our sets:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">tagset1</span><span class="o">.</span><span class="n">foreach</span><span class="o">(</span><span class="n">grokTag</span><span class="o">(</span><span class="k">_</span><span class="o">))</span>
+<span class="n">C2</span>
+<span class="n">A1</span>
+<span class="n">B2</span>
+<span class="n">A2</span>
+<span class="n">B1</span>
+<span class="n">C1</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="n">tagset2</span><span class="o">.</span><span class="n">foreach</span><span class="o">(</span><span class="n">grokTag</span><span class="o">(</span><span class="k">_</span><span class="o">))</span>
+<span class="n">A1</span>
+<span class="n">B1</span>
+<span class="n">C1</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="n">keyset1</span><span class="o">.</span><span class="n">foreach</span><span class="o">(</span><span class="n">grokKey</span><span class="o">(</span><span class="k">_</span><span class="o">))</span>
+<span class="n">A1</span>
+<span class="n">B1</span>
+<span class="n">C1</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="n">keyset2</span><span class="o">.</span><span class="n">foreach</span><span class="o">(</span><span class="n">grokKey</span><span class="o">(</span><span class="k">_</span><span class="o">))</span>
+<span class="n">A1</span>
+<span class="n">B1</span>
+<span class="n">C1</span>
+</code></pre>
+</div>
+
+<p>We can also use type keys as keys in maps. For instance:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="k">var</span> <span class="n">counter</span> <span class="k">=</span> <span class="nc">Map</span><span class="o">[</span><span class="kt">TypeKey</span><span class="o">[</span><span class="k">_</span><span class="o">]</span>, <span class="kt">Int</span><span class="o">]()</span>
+<span class="n">counter</span><span class="k">:</span> <span class="kt">scala.collection.immutable.Map</span><span class="o">[</span><span class="k">type</span><span class="kt">key.TypeKey</span><span class="o">[</span><span class="k">_</span><span class="o">]</span>,<span class="kt">Int</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Map</span><span class="o">()</span>
+</code></pre>
+</div>
+
+<p>Here’s a function to increment the counter for a given key:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="k">def</span> <span class="n">countKey</span><span class="o">[</span><span class="kt">A</span> <span class="kt">:</span> <span class="kt">TypeKey</span><span class="o">]</span><span class="k">:</span> <span class="kt">Unit</span> <span class="o">=</span>
+     <span class="o">|</span>   <span class="n">counter</span> <span class="o">+=</span> <span class="n">typeKey</span><span class="o">[</span><span class="kt">A</span><span class="o">]</span> <span class="o">-&gt;</span>
+     <span class="o">|</span>     <span class="o">(</span><span class="n">counter</span><span class="o">.</span><span class="n">getOrElse</span><span class="o">(</span><span class="n">typeKey</span><span class="o">[</span><span class="kt">A</span><span class="o">],</span> <span class="mi">0</span><span class="o">)</span> <span class="o">+</span> <span class="mi">1</span><span class="o">)</span>
+<span class="n">countKey</span><span class="k">:</span> <span class="err">[</span><span class="kt">A</span><span class="err">]</span><span class="o">(</span><span class="kt">implicit</span> <span class="kt">evidence$1:</span> <span class="k">type</span><span class="kt">key.TypeKey</span><span class="o">[</span><span class="kt">A</span><span class="o">])</span><span class="nc">Unit</span>
+</code></pre>
+</div>
+
+<p>Let’s see how it works:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">scala</span><span class="o">&gt;</span> <span class="n">counter</span><span class="o">(</span><span class="n">typeKey</span><span class="o">[</span><span class="kt">A1</span><span class="o">])</span>
+<span class="n">java</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="nc">NoSuchElementException</span><span class="k">:</span> <span class="kt">key</span> <span class="kt">not</span> <span class="kt">found:</span> <span class="kt">TypeKey</span><span class="o">[</span><span class="kt">A1</span><span class="o">]</span>
+  <span class="n">at</span> <span class="n">scala</span><span class="o">.</span><span class="n">collection</span><span class="o">.</span><span class="nc">MapLike$class</span><span class="o">.</span><span class="n">default</span><span class="o">(</span><span class="nc">MapLike</span><span class="o">.</span><span class="n">scala</span><span class="k">:</span><span class="err">228</span><span class="o">)</span>
+  <span class="n">at</span> <span class="n">scala</span><span class="o">.</span><span class="n">collection</span><span class="o">.</span><span class="nc">AbstractMap</span><span class="o">.</span><span class="n">default</span><span class="o">(</span><span class="nc">Map</span><span class="o">.</span><span class="n">scala</span><span class="k">:</span><span class="err">59</span><span class="o">)</span>
+  <span class="n">at</span> <span class="n">scala</span><span class="o">.</span><span class="n">collection</span><span class="o">.</span><span class="nc">MapLike$class</span><span class="o">.</span><span class="n">apply</span><span class="o">(</span><span class="nc">MapLike</span><span class="o">.</span><span class="n">scala</span><span class="k">:</span><span class="err">141</span><span class="o">)</span>
+  <span class="n">at</span> <span class="n">scala</span><span class="o">.</span><span class="n">collection</span><span class="o">.</span><span class="nc">AbstractMap</span><span class="o">.</span><span class="n">apply</span><span class="o">(</span><span class="nc">Map</span><span class="o">.</span><span class="n">scala</span><span class="k">:</span><span class="err">59</span><span class="o">)</span>
+  <span class="o">...</span> <span class="mi">43</span> <span class="n">elided</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="n">counter</span><span class="o">(</span><span class="n">typeKey</span><span class="o">[</span><span class="kt">A2</span><span class="o">])</span>
+<span class="n">java</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="nc">NoSuchElementException</span><span class="k">:</span> <span class="kt">key</span> <span class="kt">not</span> <span class="kt">found:</span> <span class="kt">TypeKey</span><span class="o">[</span><span class="kt">A2</span><span class="o">]</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="n">countKey</span><span class="o">[</span><span class="kt">A1</span><span class="o">]</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="n">counter</span><span class="o">(</span><span class="n">typeKey</span><span class="o">[</span><span class="kt">A1</span><span class="o">])</span>
+<span class="n">res13</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="n">counter</span><span class="o">(</span><span class="n">typeKey</span><span class="o">[</span><span class="kt">A2</span><span class="o">])</span>
+<span class="n">res14</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="n">countKey</span><span class="o">[</span><span class="kt">A1</span><span class="o">]</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="n">countKey</span><span class="o">[</span><span class="kt">A2</span><span class="o">]</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="n">countKey</span><span class="o">[</span><span class="kt">A1</span><span class="o">]</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="n">countKey</span><span class="o">[</span><span class="kt">A2</span><span class="o">]</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="n">counter</span><span class="o">(</span><span class="n">typeKey</span><span class="o">[</span><span class="kt">A1</span><span class="o">])</span>
+<span class="n">res15</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">5</span>
+
+<span class="n">scala</span><span class="o">&gt;</span> <span class="n">counter</span><span class="o">(</span><span class="n">typeKey</span><span class="o">[</span><span class="kt">A2</span><span class="o">])</span>
+<span class="n">res16</span><span class="k">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">5</span>
+</code></pre>
+</div>
+
+<p>By this point, we’ve exercised all the basic functionality of a <code class="highlighter-rouge">TypeKey</code>.  Do you have any ideas of real-life scenarios where these might come in handy? We’ll start looking at a more realistic use-case in the <a href="typekeymaps.html">next chapter</a>, when we begin to investigate <code class="highlighter-rouge">TypeKeyMaps</code>.</p>
+
+      </section>
+    </div>
+
+    
+  </body>
+</html>

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/css/style.css?v=">
+    <title>typekey by </title>
+  </head>
+
+  <body>
+
+    <header>
+      <div class="container">
+        <h1>typekey</h1>
+        <h2>Higher Kinded Type-Polymorphic Collections</h2>
+
+        <section id="downloads">
+          <a href="api/typekey" class="btn">Scaladoc API</a>
+          <a href="" class="btn btn-github"><span class="icon"></span>View on GitHub</a>
+        </section>
+      </div>
+    </header>
+
+    <div class="container">
+      <section id="main_content">
+        <h2 id="type-bound-maps">Type Bound Maps</h2>
+
+<p>A <code class="highlighter-rouge">TypeBoundMap</code> is a map where the key and value types both take a type parameter. For any key-value pair in the map, the key and value will have the same type argument for their type parameter. Let’s take a look at an example and see how this works.</p>
+
+<p>Suppose we are building a system called “UserComment”, where users can post comments about whatever is on their mind. We start out with two entity classes to represent our domain model: <code class="highlighter-rouge">User</code> and <code class="highlighter-rouge">Comment</code>. We choose to label our entity classes with an <code class="highlighter-rouge">Entity</code> trait, and we also provide a type class for every entity type, in which we store information such as the natural keys for that type:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">trait</span> <span class="nc">Entity</span>
+
+<span class="k">trait</span> <span class="nc">EntityType</span><span class="o">[</span><span class="kt">E</span> <span class="k">&lt;:</span> <span class="kt">Entity</span><span class="o">]</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="n">naturalKeys</span><span class="k">:</span> <span class="kt">Seq</span><span class="o">[</span><span class="kt">NaturalKey</span><span class="o">]</span> <span class="k">=</span> <span class="nc">Seq</span><span class="o">()</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>We provide a default empty set of natural keys, but implementing classes want to override it where appropriate. Our convention is to have the companion object to the entity class implement the <code class="highlighter-rouge">EntityType</code>, like so:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">User</span><span class="o">(</span><span class="n">userId</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">firstName</span><span class="k">:</span> <span class="kt">String</span><span class="o">,</span> <span class="n">lastName</span><span class="k">:</span> <span class="kt">String</span><span class="o">)</span>
+<span class="k">extends</span> <span class="nc">Entity</span>
+
+<span class="k">object</span> <span class="nc">User</span> <span class="k">extends</span> <span class="nc">EntityType</span><span class="o">[</span><span class="kt">User</span><span class="o">]</span> <span class="o">{</span>
+  <span class="k">override</span> <span class="k">val</span> <span class="n">naturalKeys</span> <span class="k">=</span> <span class="nc">Seq</span><span class="o">(</span><span class="nc">NaturalKey</span><span class="o">(</span><span class="s">"User.userId"</span><span class="o">))</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>We also have repositories for each of our entity classes, like so:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">trait</span> <span class="nc">Repository</span><span class="o">[</span><span class="kt">E</span> <span class="k">&lt;:</span> <span class="kt">Entity</span><span class="o">]</span>
+
+<span class="nc">class</span> <span class="nc">UserRepo</span> <span class="k">extends</span> <span class="nc">Repository</span><span class="o">[</span><span class="kt">User</span><span class="o">]</span>
+<span class="k">class</span> <span class="nc">CommentRepo</span> <span class="k">extends</span> <span class="nc">Repository</span><span class="o">[</span><span class="kt">Comment</span><span class="o">]</span>
+</code></pre>
+</div>
+
+<p>Now let’s say we want to maintain a map from the entity type to the repository. We could try something like this:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">empty</span><span class="k">:</span> <span class="kt">Map</span><span class="o">[</span><span class="kt">EntityType</span><span class="o">[</span><span class="k">_</span> <span class="k">&lt;:</span> <span class="kt">Entity</span><span class="o">]</span>,
+               <span class="kt">Repository</span><span class="o">[</span><span class="k">_</span> <span class="k">&lt;:</span> <span class="kt">Entity</span><span class="o">]]</span> <span class="k">=</span> <span class="nc">Map</span><span class="o">()</span>
+
+<span class="k">val</span> <span class="n">repositories</span> <span class="k">=</span> <span class="n">empty</span> <span class="o">+</span> <span class="o">(</span><span class="nc">User</span> <span class="o">-&gt;</span> <span class="n">userRepo</span><span class="o">)</span> <span class="o">+</span> <span class="o">(</span><span class="nc">Comment</span> <span class="o">-&gt;</span> <span class="n">commentRepo</span><span class="o">)</span>
+</code></pre>
+</div>
+
+<p>But the typing of this collection does not reflect the fact that for any given pair in the map, the key and value both have same kind of entity as its type argument. This means we have to cast when retrieving a repo. For instance:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">repositories</span><span class="k">:</span> <span class="kt">Map</span><span class="o">[</span><span class="kt">EntityType</span><span class="o">[</span><span class="k">_</span> <span class="k">&lt;:</span> <span class="kt">Entity</span><span class="o">]</span>,
+                      <span class="kt">Repository</span><span class="o">[</span><span class="k">_</span> <span class="k">&lt;:</span> <span class="kt">Entity</span><span class="o">]]</span> <span class="k">=</span> <span class="n">initialize</span><span class="o">()</span>
+
+<span class="k">val</span> <span class="n">userRepo</span><span class="k">:</span> <span class="kt">Repository</span><span class="o">[</span><span class="kt">User</span><span class="o">]</span> <span class="k">=</span>
+  <span class="n">repositories</span><span class="o">(</span><span class="nc">User</span><span class="o">).</span><span class="n">asInstanceOf</span><span class="o">[</span><span class="kt">Repository</span><span class="o">[</span><span class="kt">User</span><span class="o">]]</span>
+</code></pre>
+</div>
+
+<p>There is no guarantee that the type cast will succeed. (Even worse, the type cast probably will succeed due to type erasure, and you’ll get some other <code class="highlighter-rouge">ClassCastException</code> down the line.)</p>
+
+<p>To solve this problem, we use a <code class="highlighter-rouge">TypeBoundMap</code> instead of a <code class="highlighter-rouge">Map</code>. The <code class="highlighter-rouge">TypeBoundMap</code> has three type parameters: the key type, the value type, and a bounds type that provides an upper bound for the type parameters to the key and value types. In our example, the key type is <code class="highlighter-rouge">EntityType</code>, the value type is <code class="highlighter-rouge">Repository</code> and the bounds type is <code class="highlighter-rouge">Entity</code>. We can build our <code class="highlighter-rouge">TypeBoundMap</code> like so:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">emblem.typeBound.TypeBoundMap</span>
+
+<span class="k">val</span> <span class="n">repositories</span> <span class="k">=</span>
+  <span class="nc">TypeBoundMap</span><span class="o">[</span><span class="kt">Entity</span>, <span class="kt">EntityType</span>, <span class="kt">Repository</span><span class="o">]()</span> <span class="o">+</span>
+  <span class="o">(</span><span class="nc">User</span> <span class="o">-&gt;</span> <span class="n">userRepo</span><span class="o">)</span> <span class="o">+</span>
+  <span class="o">(</span><span class="nc">Comment</span> <span class="o">-&gt;</span> <span class="n">commentRepo</span><span class="o">)</span>
+</code></pre>
+</div>
+
+<p>It’s a compiler error to try to add a key-value pair to a <code class="highlighter-rouge">TypeBoundMap</code> when the type parameter for the key and value don’t match, as in both of the following expressions:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="n">repositories</span> <span class="o">+</span> <span class="o">(</span><span class="nc">User</span> <span class="o">-&gt;</span> <span class="n">commentRepo</span><span class="o">)</span> <span class="c1">// does not compile!
+</span><span class="n">repositories</span> <span class="o">+</span> <span class="o">(</span><span class="nc">Comment</span> <span class="o">-&gt;</span> <span class="n">userRepo</span><span class="o">)</span> <span class="c1">// does not compile!
+</span></code></pre>
+</div>
+
+<p>Pulling a repository out of the map is type-safe, and does not require a cast:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">userRepo</span><span class="k">:</span> <span class="kt">Repository</span><span class="o">[</span><span class="kt">User</span><span class="o">]</span> <span class="k">=</span> <span class="n">repositories</span><span class="o">(</span><span class="nc">User</span><span class="o">)</span>
+</code></pre>
+</div>
+
+<p>The <a href="TypeKeyMap"><code class="highlighter-rouge">TypeKeyMap</code></a> that we looked at in the last chapter is really just a special case of a <code class="highlighter-rouge">TypeBoundMap</code> where the key type is fixed as a <code class="highlighter-rouge">TypeKey</code>. It’s included as a separate class so that we can make use of implicit <code class="highlighter-rouge">TypeKey</code> values for a more succinct API. For instance, consider the <code class="highlighter-rouge">ComputerPart</code> example from the previous chapter. We could have chosen to use a <code class="highlighter-rouge">TypeBoundMap[ComputerPart, TypeKey, List]</code> instead of a <code class="highlighter-rouge">TypeKeyMap[ComputerPart, List]</code>:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">emblem.TypeKeyMap</span>
+<span class="k">import</span> <span class="nn">emblem.typeKey</span>
+
+<span class="k">val</span> <span class="n">inventories</span><span class="k">:</span> <span class="kt">TypeKeyMap</span><span class="o">[</span><span class="kt">ComputerPart</span>, <span class="kt">List</span><span class="o">]</span> <span class="k">=</span> <span class="n">initializeInventories</span><span class="o">()</span>
+<span class="k">val</span> <span class="n">inventories2</span><span class="k">:</span> <span class="kt">TypeBoundMap</span><span class="o">[</span><span class="kt">ComputerPart</span>, <span class="kt">TypeKey</span>, <span class="kt">List</span><span class="o">]</span> <span class="k">=</span> <span class="n">initializeInventories2</span><span class="o">()</span>
+
+<span class="c1">// longhand for adding a key-value pair to the map:
+</span><span class="n">inventories</span> <span class="o">+</span> <span class="n">typeKey</span><span class="o">[</span><span class="kt">Memory</span><span class="o">]</span> <span class="o">-&gt;</span> <span class="n">memoryList</span>
+<span class="n">inventories2</span> <span class="o">+</span> <span class="n">typeKey</span><span class="o">[</span><span class="kt">Memory</span><span class="o">]</span> <span class="o">-&gt;</span> <span class="n">memoryList</span>
+
+<span class="c1">// shorthand only available for TypeKeyMap:
+</span><span class="n">inventories</span> <span class="o">+</span> <span class="n">memoryList</span>
+
+<span class="c1">// longhand for checking for containment:
+</span><span class="n">inventories</span><span class="o">.</span><span class="n">contains</span><span class="o">(</span><span class="n">typeKey</span><span class="o">[</span><span class="kt">Memory</span><span class="o">])</span>
+<span class="n">inventories2</span><span class="o">.</span><span class="n">contains</span><span class="o">(</span><span class="n">typeKey</span><span class="o">[</span><span class="kt">Memory</span><span class="o">])</span>
+
+<span class="c1">// shorthand only available for TypeKeyMap:
+</span><span class="n">inventories</span><span class="o">.</span><span class="n">contains</span><span class="o">[</span><span class="kt">Memory</span><span class="o">]</span>
+
+<span class="c1">// longhand for retrieving a value:
+</span><span class="k">val</span> <span class="n">memList</span> <span class="k">=</span> <span class="n">inventories</span><span class="o">(</span><span class="n">typeKey</span><span class="o">[</span><span class="kt">Memory</span><span class="o">])</span>
+<span class="k">val</span> <span class="n">memList2</span> <span class="k">=</span> <span class="n">inventories2</span><span class="o">(</span><span class="n">typeKey</span><span class="o">[</span><span class="kt">Memory</span><span class="o">])</span>
+
+<span class="c1">// shorthand only available for TypeKeyMap:
+</span><span class="k">val</span> <span class="n">memList3</span> <span class="k">=</span> <span class="n">inventories</span><span class="o">[</span><span class="kt">Memory</span><span class="o">]</span>
+</code></pre>
+</div>
+
+<p>Because <code class="highlighter-rouge">TypeKeyMap</code> and <code class="highlighter-rouge">TypeBoundMap</code> share a lot of underlying code, they both implement a similar subset of the <code class="highlighter-rouge">scala.collections.immutable.Map</code> API:</p>
+
+<ul>
+  <li><code class="highlighter-rouge">+</code>, <code class="highlighter-rouge">++</code>, <code class="highlighter-rouge">apply</code>, <code class="highlighter-rouge">contains</code>, <code class="highlighter-rouge">equals</code>, <code class="highlighter-rouge">filter</code>, <code class="highlighter-rouge">filterKeys</code>, <code class="highlighter-rouge">filterNot</code>, <code class="highlighter-rouge">filterValues</code>, <code class="highlighter-rouge">foreach</code>, <code class="highlighter-rouge">get</code>, <code class="highlighter-rouge">getOrElse</code>, <code class="highlighter-rouge">hashCode</code>, <code class="highlighter-rouge">isEmpty</code>, <code class="highlighter-rouge">iterator</code>, <code class="highlighter-rouge">keys</code>, <code class="highlighter-rouge">mapValues</code>, <code class="highlighter-rouge">size</code>, <code class="highlighter-rouge">toString</code>, <code class="highlighter-rouge">values</code></li>
+</ul>
+
+<p>I expect to continue to grow the API to mirror the Scala library map API as much as possible. If you are using <code class="highlighter-rouge">TypeBoundMaps</code>, and there is a method missing from the API that you would like to have, please let me know, and I will do my best to put it in.</p>
+
+<p>For more examples of using <code class="highlighter-rouge">TypeBoundMaps</code>, take a look at the
+<a href="https://github.com/longevityframework/typekey/blob/master/src/test/scala/typekey/typeBoundMap">TypeBoundMap unit tests</a>.</p>
+
+      </section>
+    </div>
+
+    
+  </body>
+</html>

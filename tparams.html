@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/css/style.css?v=">
+    <title>typekey by </title>
+  </head>
+
+  <body>
+
+    <header>
+      <div class="container">
+        <h1>typekey</h1>
+        <h2>Higher Kinded Type-Polymorphic Collections</h2>
+
+        <section id="downloads">
+          <a href="api/typekey" class="btn">Scaladoc API</a>
+          <a href="" class="btn btn-github"><span class="icon"></span>View on GitHub</a>
+        </section>
+      </div>
+    </header>
+
+    <div class="container">
+      <section id="main_content">
+        <h2 id="using-types-that-do-not-have-exactly-one-type-parameter">Using Types that do not have Exactly One Type Parameter</h2>
+
+<p>It’s a bit of a limitation that our <code class="highlighter-rouge">TypeKeyMaps</code> and <code class="highlighter-rouge">TypeBoundMaps</code> only take key and value types with a single type parameter. What if we wanted to use these kinds of maps with simpler, or more complicated types? As an example, let’s revisit our “UserComment” system from the <a href="typeboundmaps.html">previous chapter</a>. A quick summary of our <code class="highlighter-rouge">Entity</code> and <code class="highlighter-rouge">EntityType</code> hierarchies:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">trait</span> <span class="nc">Entity</span>
+<span class="k">class</span> <span class="nc">User</span> <span class="k">extends</span> <span class="nc">Entity</span>
+<span class="k">class</span> <span class="nc">Comment</span> <span class="k">extends</span> <span class="nc">Entity</span>
+
+<span class="k">trait</span> <span class="nc">EntityType</span><span class="o">[</span><span class="kt">E</span> <span class="k">&lt;:</span> <span class="kt">Entity</span><span class="o">]</span>
+<span class="nc">object</span> <span class="nc">User</span> <span class="k">extends</span> <span class="nc">EntityType</span><span class="o">[</span><span class="kt">User</span><span class="o">]</span>
+<span class="k">object</span> <span class="nc">Comment</span> <span class="k">extends</span> <span class="nc">EntityType</span><span class="o">[</span><span class="kt">Comment</span><span class="o">]</span>
+</code></pre>
+</div>
+
+<p>Let’s say we are targeting two kinds of databases: MongoDB and an in-memory database. We might introduce the following type hierarchy:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">sealed</span> <span class="k">trait</span> <span class="nc">PersistenceType</span>
+<span class="k">case</span> <span class="k">object</span> <span class="nc">Mongo</span> <span class="k">extends</span> <span class="nc">PersistenceType</span>
+<span class="k">case</span> <span class="k">object</span> <span class="nc">InMem</span> <span class="k">extends</span> <span class="nc">PersistenceType</span>
+</code></pre>
+</div>
+
+<p>Now we want to modify our repository type so that it also takes a <code class="highlighter-rouge">PersistenceType</code> as a type parameter:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">trait</span> <span class="nc">NewRepository</span><span class="o">[</span><span class="kt">E</span> <span class="k">&lt;:</span> <span class="kt">Entity</span>, <span class="kt">P</span> <span class="k">&lt;:</span> <span class="kt">PersistenceType</span><span class="o">]</span>
+
+<span class="nc">class</span> <span class="nc">UserRepo</span> <span class="k">extends</span> <span class="nc">NewRepository</span><span class="o">[</span><span class="kt">User</span>, <span class="kt">Mongo.</span><span class="k">type</span><span class="o">]</span>
+<span class="k">class</span> <span class="nc">CommentRepo</span> <span class="k">extends</span> <span class="nc">NewRepository</span><span class="o">[</span><span class="kt">Comment</span>, <span class="kt">Mongo.</span><span class="k">type</span><span class="o">]</span>
+
+<span class="k">class</span> <span class="nc">TestUserRepo</span> <span class="k">extends</span> <span class="nc">NewRepository</span><span class="o">[</span><span class="kt">User</span>, <span class="kt">InMem.</span><span class="k">type</span><span class="o">]</span>
+<span class="k">class</span> <span class="nc">TestCommentRepo</span> <span class="k">extends</span> <span class="nc">NewRepository</span><span class="o">[</span><span class="kt">Comment</span>, <span class="kt">InMem.</span><span class="k">type</span><span class="o">]</span>
+</code></pre>
+</div>
+
+<p>We just broke our repository map, that used to look something like this:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">emblem.typeBound.TypeBoundMap</span>
+
+<span class="c1">// does not compile!
+</span><span class="k">val</span> <span class="n">repositories</span> <span class="k">=</span>
+  <span class="nc">TypeBoundMap</span><span class="o">[</span><span class="kt">Entity</span>, <span class="kt">EntityType</span>, <span class="kt">NewRepository</span><span class="o">]()</span> <span class="o">+</span>
+  <span class="o">(</span><span class="nc">User</span> <span class="o">-&gt;</span> <span class="n">userRepo</span><span class="o">)</span> <span class="o">+</span>
+  <span class="o">(</span><span class="nc">Comment</span> <span class="o">-&gt;</span> <span class="n">commentRepo</span><span class="o">)</span>
+</code></pre>
+</div>
+
+<p>This now gives a compiler error: <code class="highlighter-rouge">NewRepository takes two type parameters, expected: one</code>.</p>
+
+<p>You might think that we would need to implement a <em>new</em> kind of <code class="highlighter-rouge">TypeBoundMap</code>; one where the value type takes two parameters. And we would need <em>another</em> type of <code class="highlighter-rouge">TypeBoundMap</code> where the second type parameter, and not the first, is the one that varies with the key’s type parameter. And so on for all the possible combinations we would want to handle. Thankfully, Scala’s type system is flexible enough so that we don’t have to do this. Instead, we need to introduce a new type that effectively transforms the two-type parameter type into a one-type parameter type. In our case, something like this:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">type</span> <span class="kt">RepoAnyPersistenceType</span><span class="o">[</span><span class="kt">E</span> <span class="k">&lt;:</span> <span class="kt">Entity</span><span class="o">]</span> <span class="k">=</span> <span class="nc">NewRepository</span><span class="o">[</span><span class="kt">E</span>, <span class="k">_</span> <span class="k">&lt;:</span> <span class="kt">PersistenceType</span><span class="o">]</span>
+</code></pre>
+</div>
+
+<p>Now, a <code class="highlighter-rouge">RepoAnyPersistenceType[User]</code> is the same type as <code class="highlighter-rouge">NewRepository[User, _ &lt;: PersistenceType]</code>, and <code class="highlighter-rouge">RepoAnyPersistenceType[Comment]</code> is the same as <code class="highlighter-rouge">NewRepository[Comment, _ &lt;: PersistenceType]</code>. The new type works with a <code class="highlighter-rouge">TypeBoundMap</code>:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">repositories</span> <span class="k">=</span>
+  <span class="nc">TypeBoundMap</span><span class="o">[</span><span class="kt">Entity</span>, <span class="kt">EntityType</span>, <span class="kt">RepoAnyPersistenceType</span><span class="o">]()</span> <span class="o">+</span>
+  <span class="o">(</span><span class="nc">User</span> <span class="o">-&gt;</span> <span class="n">userRepo</span><span class="o">)</span> <span class="o">+</span>
+  <span class="o">(</span><span class="nc">Comment</span> <span class="o">-&gt;</span> <span class="n">commentRepo</span><span class="o">)</span>
+</code></pre>
+</div>
+
+<p>Now, when we pull a repository out of the map, it types as follows:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">userRepo2</span><span class="k">:</span> <span class="kt">NewRepository</span><span class="o">[</span><span class="kt">User</span>, <span class="k">_</span> <span class="k">&lt;:</span> <span class="kt">PersistenceType</span><span class="o">]</span> <span class="k">=</span> <span class="n">repositories</span><span class="o">(</span><span class="nc">User</span><span class="o">)</span>
+</code></pre>
+</div>
+
+<p>When can use the same trick for a type with no type parameters. For instance, suppose we want to keep track of the repositories that manage given entities. Something like:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">var</span> <span class="n">managingRepoMap</span> <span class="k">=</span> <span class="nc">Map</span><span class="o">[</span><span class="k">_</span> <span class="k">&lt;:</span> <span class="kt">Entity</span>, <span class="kt">Repository</span><span class="o">[</span><span class="k">_</span> <span class="k">&lt;:</span> <span class="kt">Entity</span><span class="o">]]()</span>
+
+<span class="c1">// track that user1 is managed by userRepo1:
+</span><span class="n">managingRepoMap</span> <span class="o">+=</span> <span class="n">user1</span> <span class="o">-&gt;</span> <span class="n">userRepo1</span>
+</code></pre>
+</div>
+
+<p>Of course, using a Scala library map as above is going to lose type information, and require the use of a cast on the way out:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">managingRepo</span><span class="k">:</span> <span class="kt">Repository</span><span class="o">[</span><span class="kt">User</span><span class="o">]</span> <span class="k">=</span> <span class="n">managingRepoMap</span><span class="o">(</span><span class="n">user1</span><span class="o">).</span><span class="n">asInstanceOf</span><span class="o">[</span><span class="kt">Repository</span><span class="o">[</span><span class="kt">User</span><span class="o">]]</span>
+</code></pre>
+</div>
+
+<p>But we can’t just just a <code class="highlighter-rouge">TypeBoundMap</code> with the types we have so far. This doesn’t compile:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">var</span> <span class="n">managingRepoMap</span> <span class="k">=</span> <span class="nc">TypeBoundMap</span><span class="o">[</span><span class="kt">Entity</span>, <span class="kt">Entity</span>, <span class="kt">Repository</span><span class="o">]()</span> <span class="c1">// does not compile!
+</span></code></pre>
+</div>
+
+<p>The error message is not surprising: <code class="highlighter-rouge">Entity takes no type parameters, expected: one</code></p>
+
+<p>We can get around this again by introducing a new type:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">type</span> <span class="kt">EntityIdentity</span><span class="o">[</span><span class="kt">E</span> <span class="k">&lt;:</span> <span class="kt">Entity</span><span class="o">]</span> <span class="k">=</span> <span class="n">E</span>
+</code></pre>
+</div>
+
+<p>Now, <code class="highlighter-rouge">EntityIdentity[User]</code> is the same type as <code class="highlighter-rouge">User</code>, and <code class="highlighter-rouge">EntityIdentity[Comment]</code> is the same as <code class="highlighter-rouge">Comment</code>. And we can use it in our <code class="highlighter-rouge">TypeBoundMap</code>:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">var</span> <span class="n">managingRepoMap</span> <span class="k">=</span> <span class="nc">TypeBoundMap</span><span class="o">[</span><span class="kt">Entity</span>, <span class="kt">EntityIdentity</span>, <span class="kt">Repository</span><span class="o">]()</span>
+<span class="n">managingRepoMap</span> <span class="o">+=</span> <span class="n">user1</span> <span class="o">-&gt;</span> <span class="n">userRepo</span>
+<span class="n">managingRepoMap</span> <span class="o">+=</span> <span class="n">user2</span> <span class="o">-&gt;</span> <span class="n">testUserRepo</span>
+<span class="n">managingRepoMap</span> <span class="o">+=</span> <span class="n">comment1</span> <span class="o">-&gt;</span> <span class="n">commentRepo</span>
+<span class="n">managingRepoMap</span> <span class="o">+=</span> <span class="n">comment2</span> <span class="o">-&gt;</span> <span class="n">testCommentRepo</span>
+</code></pre>
+</div>
+
+<p>The same technique works with <code class="highlighter-rouge">TypeKeyMaps</code>, so we can build maps such as the following:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">import</span> <span class="nn">emblem.TypeKeyMap</span>
+
+<span class="k">val</span> <span class="n">repositories</span> <span class="k">=</span> <span class="nc">TypeKeyMap</span><span class="o">[</span><span class="kt">Entity</span>, <span class="kt">RepoAnyPersistenceType</span><span class="o">]()</span>
+
+<span class="c1">// one representative entity for each every entity type:
+</span><span class="k">val</span> <span class="n">representatives</span> <span class="k">=</span> <span class="nc">TypeKeyMap</span><span class="o">[</span><span class="kt">Entity</span>, <span class="kt">EntityIdentity</span><span class="o">]()</span>
+</code></pre>
+</div>
+
+      </section>
+    </div>
+
+    
+  </body>
+</html>

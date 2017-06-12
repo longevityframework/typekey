@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/css/style.css?v=">
+    <title>typekey by </title>
+  </head>
+
+  <body>
+
+    <header>
+      <div class="container">
+        <h1>typekey</h1>
+        <h2>Higher Kinded Type-Polymorphic Collections</h2>
+
+        <section id="downloads">
+          <a href="api/typekey" class="btn">Scaladoc API</a>
+          <a href="" class="btn btn-github"><span class="icon"></span>View on GitHub</a>
+        </section>
+      </div>
+    </header>
+
+    <div class="container">
+      <section id="main_content">
+        <h2 id="experimenting-with-typekey-in-the-scala-repl">Experimenting with typekey in the Scala REPL</h2>
+
+<p>Here’s a quick formula for experimenting with typekey in the REPL (Scala’s interactive shell). I’m
+going to start it up inside SBT in the emblem project, but this basic procedure should work for any
+project that <a href="libdep.html">declares a dependency on typekey</a>.</p>
+
+<p>Download the source code for emblem:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>git clone https://github.com/longevityframework/typekey.git
+</code></pre>
+</div>
+
+<p>Enter the directory created by <code class="highlighter-rouge">git</code>:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>cd typekey
+</code></pre>
+</div>
+
+<p>Now boot into SBT:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>sbt
+</code></pre>
+</div>
+
+<p>Boot up the REPL:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>console
+</code></pre>
+</div>
+
+<p>This will give you a <code class="highlighter-rouge">scala&gt;</code> prompt.  Import some utility classes like so:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>import typekey.typeKey
+</code></pre>
+</div>
+
+<p>Start playing around!</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>println(typeKey[List[String]])
+</code></pre>
+</div>
+
+      </section>
+    </div>
+
+    
+  </body>
+</html>
