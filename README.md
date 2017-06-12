@@ -13,4 +13,4 @@ In brief, typekey provides the following features:
   type argument.
 
 For more details, please see the [typekey website](https://longevityframework.github.io/typekey/)
-and [API docs](https://longevityframework.github.io/typekey/api).
+and [API docs](https://longevityframework.github.io/typekey/api/typekey).
