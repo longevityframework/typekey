@@ -11,13 +11,13 @@ sure your project is using a compatible Scala version. For example,
 your `build.sbt` file may have:
 
 ```scala
-scalaVersion := "2.11.8"
+scalaVersion := "2.11.12"
 ```
 
 Or:
 
 ```scala
-scalaVersion := "2.12.2"
+scalaVersion := "2.12.6"
 ```
 
 ### Using Sonatype Artifacts
@@ -27,7 +27,7 @@ In your `build.sbt`, include the lines:
 ```scala
 resolvers += Resolver.sonatypeRepo("releases")
 
-libraryDependencies += "org.longevityframework" %% "typekey" % "1.0.0"
+libraryDependencies += "org.longevityframework" %% "typekey" % "1.0.1"
 ```
 
 At this time I have no plans to publish snapshots. I'll publish any new releases to Sonatype,
