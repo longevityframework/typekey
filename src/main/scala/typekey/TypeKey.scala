@@ -53,21 +53,25 @@ case class TypeKey[A](val tag: TypeTag[A]) {
   }
 
   /** shorthand for `this.tpe.<:<` */
-  def <:<(that: Type): Boolean = memoize_<:< getOrElse(that, {
-    val result = this.tpe <:< that
-    memoize_<:< += that -> result
-    result
-  })
+  def <:<(that: Type): Boolean = this.synchronized {
+    memoize_<:< getOrElse(that, {
+      val result = this.tpe <:< that
+      memoize_<:< += that -> result
+      result
+    })
+  }
 
   /** shorthand for `this.tpe.<:<` */
   def <:<(that: TypeKey[_]): Boolean = this <:< that.tpe
 
   /** shorthand for `this.tpe.=:=` */
-  def =:=(that: Type): Boolean = memoize_=:= getOrElse(that, {
-    val result = this.tpe =:= that
-    memoize_=:= += that -> result
-    result
-  })
+  def =:=(that: Type): Boolean = this.synchronized {
+    memoize_=:= getOrElse(that, {
+      val result = this.tpe =:= that
+      memoize_=:= += that -> result
+      result
+    })
+  }
 
   /** shorthand for `this.tpe.=:=` */
   def =:=(that: TypeKey[_]): Boolean = this =:= that.tpe
